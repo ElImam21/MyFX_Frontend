@@ -1,39 +1,32 @@
 import { MongoClient } from "mongodb";
 
 const uri = process.env.MONGODB_URI;
-console.log("🔗 Connecting to:", uri);
+if (!uri) throw new Error("❌ MONGODB_URI belum diatur di .env.local");
 
 const options = {
   serverSelectionTimeoutMS: 10000,
 };
 
-let client;
-let clientPromise;
-
-if (!uri) throw new Error("❌ MONGODB_URI belum diatur di .env.local");
-
-try {
-  if (process.env.NODE_ENV === "development") {
-    if (!global._mongoClientPromise) {
-      client = new MongoClient(uri, options);
-      global._mongoClientPromise = client.connect();
-    }
-    clientPromise = global._mongoClientPromise;
-  } else {
-    client = new MongoClient(uri, options);
-    clientPromise = client.connect();
-  }
-} catch (err) {
-  console.error("❌ Gagal inisialisasi koneksi MongoDB:", err);
+// Global cache
+let cached = global._mongo;
+if (!cached) {
+  cached = global._mongo = { conn: null, promise: null };
 }
 
 export async function connectDB() {
-  try {
-    const connectedClient = await clientPromise;
-    console.log("✅ Terhubung ke MongoDB Atlas");
-    return connectedClient.db("myfx");
-  } catch (err) {
-    console.error("❌ Gagal konek ke MongoDB:", err);
-    throw err;
+  if (cached.conn) {
+    // 🔁 Koneksi sudah ada, langsung return db
+    return cached.conn.db;
   }
+
+  if (!cached.promise) {
+    const client = new MongoClient(uri, options);
+    cached.promise = client.connect().then((client) => {
+      console.log("✅ Terhubung ke MongoDB Atlas (baru)");
+      return { client, db: client.db("myfx") };
+    });
+  }
+
+  cached.conn = await cached.promise;
+  return cached.conn.db; // 🟢 langsung return db instance
 }

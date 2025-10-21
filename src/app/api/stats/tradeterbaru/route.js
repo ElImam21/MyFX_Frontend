@@ -1,13 +1,10 @@
 import { NextResponse } from "next/server";
-import { MongoClient } from "mongodb";
-
-const uri = process.env.MONGODB_URI;
-const client = new MongoClient(uri);
+import { connectDB } from "@/lib/db"; // ✅ gunakan koneksi global caching
 
 export async function GET() {
   try {
-    await client.connect();
-    const db = client.db("myfx");
+    // Gunakan koneksi database dari global cache
+    const db = await connectDB();
 
     // Ambil 5 data terbaru dari koleksi trade_result
     const trades = await db
@@ -17,20 +14,19 @@ export async function GET() {
       .limit(5)
       .toArray();
 
-    // Format nilai pl sesuai result
-    const formattedTrades = trades.map(trade => {
+    // Format nilai PL sesuai result
+    const formattedTrades = trades.map((trade) => {
       const plValue = parseFloat(trade.pl) || 0;
       let formattedPl = plValue.toFixed(2);
 
       if (trade.result === "Profit") formattedPl = `+${formattedPl}`;
-      else if (trade.result === "Loss") formattedPl = `-${formattedPl}`;
 
       return {
         _id: trade._id?.toString(),
         pair: trade.pair || "-",
         result: trade.result || "-",
         pl: formattedPl,
-        createdAt: trade.createdAt || null
+        createdAt: trade.createdAt || null,
       };
     });
 
@@ -44,7 +40,5 @@ export async function GET() {
       { success: false, message: "Gagal mengambil trade terbaru" },
       { status: 500 }
     );
-  } finally {
-    await client.close();
   }
 }

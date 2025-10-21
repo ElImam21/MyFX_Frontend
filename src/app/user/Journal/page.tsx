@@ -363,7 +363,9 @@ export default function JournalPage() {
                       </div>
 
                       {trade.note && (
-                        <div className="text-sm text-gray-400 border-t border-gray-700 pt-3 mb-3">
+                        <div
+                          className="text-sm text-gray-400 border-t border-gray-700 pt-3 mb-3 whitespace-pre-line"
+                        >
                           {trade.note}
                         </div>
                       )}

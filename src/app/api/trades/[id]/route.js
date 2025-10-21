@@ -1,17 +1,21 @@
 import { NextResponse } from "next/server";
-import { MongoClient, ObjectId } from "mongodb";
+import { ObjectId } from "mongodb";
+import { connectDB } from "@/lib/db";
 
-const uri = process.env.MONGODB_URI;
-const client = new MongoClient(uri);
-
-// PUT — Update trade
+// PUT — Update trade berdasarkan ID
 export async function PUT(req, { params }) {
   try {
     const { id } = params;
     const { pair, result, note, sl, tp, lotSize, pl } = await req.json();
 
-    await client.connect();
-    const db = client.db("myfx");
+    if (!pair || !result) {
+      return NextResponse.json(
+        { success: false, message: "Pair dan Result wajib diisi" },
+        { status: 400 }
+      );
+    }
+
+    const db = await connectDB();
     const collection = db.collection("trade_result");
 
     const updateResult = await collection.updateOne(
@@ -49,18 +53,15 @@ export async function PUT(req, { params }) {
       { success: false, message: "Terjadi kesalahan server" },
       { status: 500 }
     );
-  } finally {
-    await client.close();
   }
 }
 
-// DELETE — Hapus trade
+// DELETE — Hapus trade berdasarkan ID
 export async function DELETE(req, { params }) {
   try {
     const { id } = params;
 
-    await client.connect();
-    const db = client.db("myfx");
+    const db = await connectDB();
     const collection = db.collection("trade_result");
 
     const deleteResult = await collection.deleteOne({ _id: new ObjectId(id) });
@@ -82,7 +83,5 @@ export async function DELETE(req, { params }) {
       { success: false, message: "Terjadi kesalahan server" },
       { status: 500 }
     );
-  } finally {
-    await client.close();
   }
 }

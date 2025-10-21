@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
-import { MongoClient } from "mongodb";
-
-const uri = process.env.MONGODB_URI;
-const client = new MongoClient(uri);
+import { connectDB } from "@/lib/db";
 
 export async function GET() {
   try {
-    await client.connect();
-    const db = client.db("myfx");
+    // Gunakan koneksi dari global connection caching
+    const db = await connectDB();
+
+    // Hitung total dokumen di koleksi trade_result
     const totalTrades = await db.collection("trade_result").countDocuments();
 
     return NextResponse.json(
@@ -20,7 +19,5 @@ export async function GET() {
       { success: false, message: "Gagal menghitung total trades" },
       { status: 500 }
     );
-  } finally {
-    await client.close();
   }
 }

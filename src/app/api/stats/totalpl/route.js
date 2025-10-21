@@ -1,18 +1,15 @@
 import { NextResponse } from "next/server";
-import { MongoClient } from "mongodb";
-
-const uri = process.env.MONGODB_URI;
-const client = new MongoClient(uri);
+import { connectDB } from "@/lib/db";
 
 export async function GET() {
   try {
-    await client.connect();
-    const db = client.db("myfx");
-
+    // Gunakan koneksi dari global connection caching
+    const db = await connectDB();
     const trades = await db.collection("trade_result").find({}).toArray();
 
     const currentMonth = new Date().getMonth() + 1; // 1–12
 
+    // Filter hanya trade bulan ini
     const filteredTrades = trades.filter(trade => {
       if (!trade.createdAt) return false;
 
@@ -24,6 +21,7 @@ export async function GET() {
       return tradeMonth === currentMonth;
     });
 
+    // Jika tidak ada data bulan ini
     if (filteredTrades.length === 0) {
       return NextResponse.json(
         { success: true, totalPl: 0.00, status: "Tidak ada data bulan ini" },
@@ -31,7 +29,7 @@ export async function GET() {
       );
     }
 
-    // Hitung total PL
+    // Hitung total Profit/Loss
     const totalPl = filteredTrades.reduce((acc, trade) => {
       const value = parseFloat(trade.pl);
       if (!isNaN(value)) acc += value;
@@ -51,7 +49,5 @@ export async function GET() {
       { success: false, message: "Gagal menghitung total profit/loss" },
       { status: 500 }
     );
-  } finally {
-    await client.close();
   }
 }
