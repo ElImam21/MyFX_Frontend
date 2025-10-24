@@ -24,24 +24,26 @@ export async function GET() {
 // POST — Tambah data trade baru
 export async function POST(req) {
   try {
-    const { pair, result, note, sl, tp, lotSize, pl } = await req.json();
+    const { pair, type, result, note, sl, tp, lotSize, pl } = await req.json();
 
-    if (!pair || !result) {
+    if (!pair || !type || !result) {
       return NextResponse.json(
-        { success: false, message: "Pair dan Result wajib diisi" },
+        { success: false, message: "Pair, Type, dan Result wajib diisi" },
         { status: 400 }
       );
     }
 
     const db = await connectDB();
-    const collection = db.collection("trade_result");
+    const tradeCollection = db.collection("trade_result");
+    const equity = db.collection("equity");
 
     const createdAt = new Date()
       .toLocaleString("sv-SE", { timeZone: "Asia/Jakarta" })
       .replace("T", " ");
 
-    await collection.insertOne({
+    await tradeCollection.insertOne({
       pair,
+      type,
       result,
       note,
       sl,
@@ -51,8 +53,17 @@ export async function POST(req) {
       createdAt,
     });
 
+    // 💰 Update equity otomatis
+    const profitLoss = parseFloat(pl) || 0;
+    if (!isNaN(profitLoss)) {
+      await equity.updateOne(
+        {},
+        { $inc: { equity: profitLoss } } // tambah atau kurangi sesuai pl
+      );
+    }
+
     return NextResponse.json(
-      { success: true, message: "Data trade berhasil disimpan" },
+      { success: true, message: "Data trade berhasil disimpan dan equity diperbarui" },
       { status: 201 }
     );
   } catch (error) {

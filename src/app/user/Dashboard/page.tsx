@@ -10,6 +10,7 @@ interface DashboardStats {
   winRate: number;
   totalTrades: number;
   monthlyGrowth: number;
+  equity: number;
 }
 
 interface Trade {
@@ -30,6 +31,7 @@ interface ApiResponse {
   wins?: number;
   losses?: number;
   message?: string;
+  equity?: number;
 }
 
 export default function DashboardPage() {
@@ -37,7 +39,8 @@ export default function DashboardPage() {
     totalPl: 0,
     winRate: 0,
     totalTrades: 0,
-    monthlyGrowth: 0
+    monthlyGrowth: 0,
+    equity: 0
   });
   const [recentTrades, setRecentTrades] = useState<Trade[]>([]);
   const [performance, setPerformance] = useState({
@@ -71,7 +74,7 @@ export default function DashboardPage() {
         const token = localStorage.getItem('authToken');
 
         // Fetch semua data secara paralel
-        const [plResponse, tradesResponse, winRateResponse] = await Promise.all([
+        const [plResponse, tradesResponse, winRateResponse, equityResponse] = await Promise.all([
           fetch('/api/stats/totalpl', {
             headers: {
               'Authorization': `Bearer ${token}`
@@ -83,6 +86,11 @@ export default function DashboardPage() {
             }
           }),
           fetch('/api/stats/winrate', {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          }),
+          fetch('/api/stats/equity', {
             headers: {
               'Authorization': `Bearer ${token}`
             }
@@ -125,13 +133,15 @@ export default function DashboardPage() {
         const plData: ApiResponse = await plResponse.json();
         const tradesData: ApiResponse = await tradesResponse.json();
         const winRateData: ApiResponse = await winRateResponse.json();
+        const equityData: ApiResponse = await equityResponse.json();
 
         // Update state dengan data dari backend
         setStats({
           totalPl: plData.success ? plData.totalPl || 0 : 0,
           totalTrades: tradesData.success ? tradesData.totalTrades || 0 : 0,
           winRate: winRateData.success ? winRateData.winRate || 0 : 0,
-          monthlyGrowth: 0.0 // Tetap menggunakan dummy data untuk monthlyGrowth
+          monthlyGrowth: 0.0,
+          equity: equityData.success ? equityData.equity || 0 : 0
         });
 
         // Fetch recent trades (Anda perlu membuat API untuk ini)
@@ -226,7 +236,17 @@ export default function DashboardPage() {
           </div>
 
           {/* Stats Grid - Hanya 3 card sekarang */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <StatCard
+              title="Equity"
+              value={`$${stats.equity.toFixed(2)}`}
+              subtitle="Saldo Akun"
+              icon={
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                </svg>
+              }
+            />
             <StatCard
               title="Total Profit/Loss"
               value={`$${stats.totalPl.toFixed(2)}`}
@@ -301,7 +321,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="h-64 bg-gray-700 rounded p-4">
                   {chartData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height={250} minWidth={0}>
                       <LineChart data={chartData}>
                         <XAxis dataKey="date" stroke="#9CA3AF" />
                         <YAxis stroke="#9CA3AF" />

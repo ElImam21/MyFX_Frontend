@@ -12,7 +12,7 @@ export default function Navbar() {
   const navigation = [
     { name: 'Beranda', href: '/user/Dashboard' },
     { name: 'Journal', href: '/user/Journal' },
-    { name: 'Statistik', href: '/user/Statistik' },
+    { name: 'History', href: '/user/History' },
     { name: 'News', href: '/user/News' },
   ];
 

@@ -5,6 +5,7 @@ import Navbar from '@/components/navbar'; // Pastikan path ini sesuai dengan str
 interface Trade {
   _id?: string;           // ID unik dari MongoDB (optional biar gak error waktu POST)
   pair: string;
+  type: string;
   result: string;
   note: string;
   sl: string;
@@ -20,6 +21,7 @@ export default function JournalPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     pair: "",
+    type: "",
     result: "",
     note: "",
     sl: "",
@@ -65,6 +67,7 @@ export default function JournalPage() {
   const resetForm = () => {
     setFormData({
       pair: "",
+      type: "",
       result: "",
       note: "",
       sl: "",
@@ -79,6 +82,7 @@ export default function JournalPage() {
   const handleEdit = (trade: Trade) => {
     setFormData({
       pair: trade.pair,
+      type: trade.type,
       result: trade.result,
       note: trade.note,
       sl: trade.sl,
@@ -171,16 +175,24 @@ export default function JournalPage() {
                   <label htmlFor="pair" className="block text-sm font-medium text-gray-300 mb-1">
                     Currency Pair
                   </label>
-                  <input
+                  <select
                     id="pair"
                     name="pair"
-                    type="text"
                     required
-                    className="appearance-none rounded-lg relative block w-full px-3 py-3 border border-gray-700 bg-gray-800 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
-                    placeholder="Contoh: EUR/USD"
+                    className="appearance-none rounded-lg relative block w-full px-3 py-3 border border-gray-700 bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
                     value={formData.pair}
                     onChange={(e) => setFormData(prev => ({ ...prev, pair: e.target.value }))}
-                  />
+                  >
+                    <option value="">Pilih Currency Pair</option>
+                    <option value="XAU/USD">XAU/USD</option>
+                    <option value="USD/JPY">USD/JPY</option>
+                    <option value="EUR/USD">EUR/USD</option>
+                    <option value="AUD/USD">AUD/USD</option>
+                    <option value="GBP/USD">GBP/USD</option>
+                    <option value="USD/CAD">USD/CAD</option>
+                    <option value="USD/CHF">USD/CHF</option>
+                    <option value="BTC/USD">BTC/USD</option>
+                  </select>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -249,6 +261,25 @@ export default function JournalPage() {
                       onChange={(e) => handleNumberInput(e, 'pl')}
                     />
                   </div>
+                </div>
+
+                {/* Type */}
+                <div>
+                  <label htmlFor="type" className="block text-sm font-medium text-gray-300 mb-1">
+                    Buy/Sell
+                  </label>
+                  <select
+                    id="type"
+                    name="type"
+                    required
+                    className="appearance-none rounded-lg relative block w-full px-3 py-3 border border-gray-700 bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                    value={formData.type}
+                    onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
+                  >
+                    <option value="">Pilih Tipe</option>
+                    <option value="Buy">Buy</option>
+                    <option value="Sell">Sell</option>
+                  </select>
                 </div>
 
                 {/* Result */}
@@ -335,12 +366,24 @@ export default function JournalPage() {
                   <p className="mt-2 text-gray-400">Belum ada data trading</p>
                 </div>
               ) : (
-                <div className="space-y-4 overflow-y-auto flex-1 max-h-[70vh] pr-2 hide-scrollbar">
+                <div className="space-y-4 overflow-y-auto flex-1 max-h-[90vh] pr-2 hide-scrollbar">
                   {trades.map((trade) => (
                     <div key={trade._id} className="border border-gray-700 rounded-lg p-4 hover:bg-gray-750 transition duration-200">
                       <div className="flex justify-between items-start mb-2">
                         <div>
-                          <h4 className="text-lg font-semibold text-white">{trade.pair}</h4>
+                          <h4 className="text-lg font-semibold text-white flex items-center gap-2">
+                            {trade.pair}
+                            {trade.type && (
+                              <span
+                                className={`px-2 py-0.5 text-xs font-medium rounded-full ${trade.type === "Buy"
+                                    ? "bg-green-600 text-white"
+                                    : "bg-red-600 text-white"
+                                  }`}
+                              >
+                                {trade.type}
+                              </span>
+                            )}
+                          </h4>
                           {trade.createdAt && (
                             <p className="text-xs text-gray-400 mt-1">
                               {new Date(trade.createdAt).toLocaleString('id-ID')}
